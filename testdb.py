@@ -14,12 +14,16 @@ class DbTestCase(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_select(self):
-        pass
+    def test_insert(self):
+        self.assertEqual(insert('test', number=21, name='ads'), 1, 'test insert fail')
 
     def test_update(self):
         pass
 
-    def test_insert(self):
-        self.assertEqual(insert('test',number=21,name='ads'),1,'test insert fail')
+    def test_select(self):
+        pass
+
+
+
+
 
