@@ -18,7 +18,7 @@
           create_engine封装了如下功能:
               1. 为数据库连接 准备需要的配置信息
               2. 创建数据库连接(由生成的全局对象engine的 connect方法提供)
-          from transwarp import db
+          from novamysql import db
           db.create_engine(user='root',
                            password='password',
                            database='test',
@@ -93,6 +93,9 @@ def create_engine(user, password, database, host='127.0.0.1', port=3306, **kw):
     # test connection...
     logging.info('Init mysql engine <%s> ok.' % hex(id(engine)))
 
+def close_engine():
+    global engine
+    engine.connect().close()
 
 def connection():
     """
@@ -108,7 +111,7 @@ def connection():
     _DbCtx            获取和释放惰性连接
     ^
     |
-    _LasyConnection   实现惰性连接
+    _LazyConnection   实现惰性连接
     """
     return _ConnectionCtx()
 
@@ -154,20 +157,6 @@ def with_transaction(func):
         @with_transaction
         def do_in_transaction():
 
-    >>> @with_transaction
-    ... def update_profile(id, name, rollback):
-    ...     u = dict(id=id, name=name, email='%s@test.org' % name, passwd=name, last_modified=time.time())
-    ...     insert('user', **u)
-    ...     update('update user set passwd=? where id=?', name.upper(), id)
-    ...     if rollback:
-    ...         raise StandardError('will cause rollback...')
-    >>> update_profile(8080, 'Julia', False)
-    >>> select_one('select * from user where id=?', 8080).passwd
-    u'JULIA'
-    >>> update_profile(9090, 'Robert', True)
-    Traceback (most recent call last):
-      ...
-    StandardError: will cause rollback...
     """
     @functools.wraps(func)
     def _wrapper(*args, **kw):
@@ -315,7 +304,7 @@ class _Engine(object):
         return self._connect()
 
 
-class _LasyConnection(object):
+class _LazyConnection(object):
     """
     惰性连接对象
     仅当需要cursor对象时，才连接数据库，获取连接
@@ -365,7 +354,7 @@ class _DbCtx(threading.local):
         初始化连接的上下文对象，获得一个惰性连接对象
         """
         logging.info('open lazy connection...')
-        self.connection = _LasyConnection()
+        self.connection = _LazyConnection()
         self.transactions = 0
 
     def cleanup(self):
